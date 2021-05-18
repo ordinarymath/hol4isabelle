@@ -31,21 +31,29 @@ e.g., `src/postkernel/TheoryDatTokens.sml`)
 ```
 git clone https://github.com/HOL-Theorem-Prover/HOL.git
 cd HOL
-git checkout 7e03303e51f
+git checkout 135409003
 
 poly < tools/smart-configure.sml
 bin/build --seq=tools/sequences/kernel
 cd ..
 ```
 
+### CakeML (optional)
+```
+git clone https://github.com/CakeML/cakeml.git
+cd cakeml
+git checkout 112863b9c 
+```
+
+
 ### Isabelle
 
-Download Isabelle2019 from ``https://isabelle.in.tum.de/website-Isabelle2019/``.
-From here on we refer to the main Isabelle executable `Isabelle2019/bin/isabelle` as simply `isabelle`
+Download Isabelle2021 from ``https://isabelle.in.tum.de/website-Isabelle2021/``.
+From here on we refer to the main Isabelle executable `Isabelle2021/bin/isabelle` as simply `isabelle`
 
 Alternatively (in order to work with the repository):
 ```
-hg clone http://isabelle.in.tum.de/repos/isabelle/rev/Isabelle2019
+hg clone http://isabelle.in.tum.de/repos/isabelle/rev/Isabelle2021
 isabelle components -I
 isabelle components -a
 isabelle build -b HOL
@@ -55,17 +63,17 @@ isabelle build -b HOL
 
 ### Explore transfer of theorems between HOL4 and Isabelle/HOL:
 ```
-isabelle jedit -d . -l HOL4_Core_Isabelle Transfer_Example.thy
+isabelle jedit -d . -l Core_Isabelle Example/Example_Transfer.thy
 ```
 
 ### Explore build of the Isabelle HOL4-Core (and all of its dependencies):
 ```
-isabelle jedit -d . -l HOL HOL4_Core_Isabelle.thy
+isabelle jedit -d . -l HOL Core_Isabelle.thy
 ```
 
 ### Explore build of the Original HOL4-Core (and all of its dependencies):
 ```
-isabelle jedit -d . -l Pure HOL4_Core_Original.thy
+isabelle jedit -d . -l Pure Core_Original.thy
 ```
 
 ## OpenTheory import
@@ -93,12 +101,12 @@ bin/build --otknl
 
 This requires
 * The [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), with Ubuntu 18.04
-* An installation of the [Isabelle2019 application](http://isabelle.in.tum.de/dist/Isabelle2019.exe)
+* An installation of the [Isabelle2021 application](http://isabelle.in.tum.de/dist/Isabelle2021.exe)
 
 Most of the installation is just like under Linux, with the following exceptions:
 * especially for polyml, make sure that everything is installed in a directory under the WSL home directory
 * all commands involving that involve "./isabelle/bin/isabelle" must be executed in the Cygwin-Terminal (in the
-  Isabelle2019) folder
+  Isabelle2021) folder
 * before building HOL, do
     ```
     echo 'val HOLDIR = "c:/path/to/hol4isabelle/HOL"' > tools-poly/poly-includes.sml

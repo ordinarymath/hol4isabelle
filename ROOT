@@ -1,16 +1,66 @@
 (* Prekernel *)
 
-session HOL4_Prekernel = Pure +
+session Prekernel in Prekernel = Pure +
   theories
-    HOL4_Prekernel
+    Prekernel
 
 
-(* Core *)
+(* Original HOL4 Kernel *)
 
-session HOL4_Core_Original = HOL4_Prekernel +
+session Core_Original in Original = Prekernel +
   theories
-    HOL4_Core_Original
+    Core
 
+session More_Original in "Original/More"  = Core_Original +
+  theories
+    More
+
+session Large_Original in "Original/Large"  = More_Original +
+  theories
+    Large
+
+
+(* Isabelle/HOL HOL4 Kernel *)
+
+session Core_Isabelle in Isabelle = HOL +
+  sessions
+    Prekernel
+  directories
+    "../splice"
+  theories
+    Core
+
+session More_Isabelle in "Isabelle/More"  = Core_Isabelle +
+  theories
+    More
+
+session Large_Isabelle in "Isabelle/Large"  = More_Isabelle +
+  theories
+    Large
+
+session CakeML_Semantics_Isabelle in "Isabelle/CakeML" = Large_Isabelle +
+  theories
+    CakeML_Semantics
+
+
+(* Debug Kernel *)
+
+session Core_Debug in Debug = Core_Isabelle +
+  sessions
+    Core_Original
+  theories
+    Core
+
+session More_Debug in "Debug/More"  = Core_Debug +
+  theories
+    More
+
+session Large_Debug in "Debug/Large"  = More_Debug +
+  theories
+    Large
+
+
+(*
 session HOL4_Core_Isabelle = HOL +
   sessions
     HOL4_Prekernel
@@ -26,10 +76,6 @@ session HOL4_Core_Debug = HOL4_Core_Isabelle +
 
 (* More *)
 
-session HOL4_More_Original = HOL4_Core_Original +
-  theories
-    HOL4_More_Original
-
 session HOL4_More_Isabelle = HOL4_Core_Isabelle +
   theories
     HOL4_More_Isabelle
@@ -41,10 +87,6 @@ session HOL4_More_Debug = HOL4_Core_Debug +
 
 (* Large *)
 
-session HOL4_Large_Original = HOL4_More_Original +
-  theories
-    HOL4_Large_Original
-
 session HOL4_Large_Isabelle = HOL4_More_Isabelle +
   theories
     HOL4_Large_Isabelle
@@ -53,9 +95,21 @@ session HOL4_Large_Debug = HOL4_More_Debug +
   theories
     HOL4_Large_Debug
 
+(* CakeML semantics *)
+
+session CakeML_Semantics_Isabelle = HOL4_Large_Isabelle +
+  theories
+    CakeML_Semantics_Isabelle
+
+session CakeML_Semantics_Original = HOL4_Large_Original +
+  theories
+    CakeML_Semantics_Original
+
+
 
 (* Example *)
 
 session Example_Transfer = HOL4_Core_Isabelle +
   theories
     Example_Transfer
+*)

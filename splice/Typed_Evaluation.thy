@@ -1,5 +1,5 @@
 theory Typed_Evaluation
-  imports "../Postkernel_Isabelle"
+  imports Core_Isabelle.Postkernel_Isa
   keywords "typed_evaluation" :: thy_decl % "ML"
 begin
 declare [[ML_environment="Isabelle"]]
@@ -16,7 +16,7 @@ in
       let
         val isscript = Config.get (Context.the_local_context()) HOL4_script
       in
-        QuoteFilter_Source.read_source isscript source
+        QuoteFilter_Source.read_source  {inscriptp=isscript, quotefixp=false} source
         |> enclose_local isscript
       end)
 end
