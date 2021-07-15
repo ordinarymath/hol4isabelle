@@ -40,21 +40,22 @@ context notes [[ML_environment="HOL4_bootstrap"]] begin
 ML \<open>structure OS : OS = struct
   open OS
   structure Process : OS_PROCESS = struct
-    type status = unit
-    val failure = ()
-    val success = ()
+    type status = OS.Process.status
+    val failure =  OS.Process.failure
+    val success =  OS.Process.success
     fun dummy s = error ("dummy implementation of OS.Process." ^ s)
     fun atExit _ = dummy "atExit"
     fun exit _ = dummy "exit"
     val getEnv = OS.Process.getEnv
     fun isSuccess _ = dummy "isSuccess"
     val sleep = OS.Process.sleep
-    fun system _ = dummy "system"
+    val system = OS.Process.system (*dummy "system"*)
     fun terminate _ = dummy "terminate"
   end
   structure FileSys : OS_FILE_SYS = struct
     open FileSys
-    fun access _ = false
+    (*minisat needs file system access*)
+    (*fun access _ = false*)
   end
 end\<close>
 end
