@@ -4,6 +4,8 @@ begin
 
 subsection \<open>more-theories\<close>
 
+ML \<open>Context_Var.bind_ref "More_Isabelle"\<close>
+
 text \<open>HOL sequence \<open>HOL/tools/sequences/more-theories\<close>\<close>
 
 subsection \<open>prelude 2\<close>
