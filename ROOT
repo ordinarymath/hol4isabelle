@@ -19,6 +19,18 @@ session Large_Original in "Original/Large"  = More_Original +
   theories
     Large
 
+session CakeML_Deps_Original in "Original/CakeML/Deps" = More_Original +
+  theories
+    CakeML_Deps
+
+session CakeML_Semantics_Original in "Original/CakeML/Semantics" = CakeML_Deps_Original +
+  theories
+    CakeML_Semantics
+
+session CakeML_Translator_Original in "Original/CakeML/Translator" = CakeML_Semantics_Original +
+  theories
+    CakeML_Translator
+
 
 (* Isabelle/HOL HOL4 Kernel *)
 
@@ -38,10 +50,17 @@ session Large_Isabelle in "Isabelle/Large"  = More_Isabelle +
   theories
     Large
 
-session CakeML_Semantics_Isabelle in "Isabelle/CakeML" = Large_Isabelle +
+session CakeML_Deps_Isabelle in "Isabelle/CakeML/Deps" = More_Isabelle +
+  theories
+    CakeML_Deps
+
+session CakeML_Semantics_Isabelle in "Isabelle/CakeML/Semantics" = CakeML_Deps_Isabelle +
   theories
     CakeML_Semantics
 
+session CakeML_Translator_Isabelle in "Isabelle/CakeML/Translator" = CakeML_Semantics_Isabelle +
+  theories
+    CakeML_Translator
 
 (* Debug Kernel *)
 
