@@ -31,7 +31,7 @@ e.g., `src/postkernel/TheoryDatTokens.sml`)
 ```
 git clone https://github.com/HOL-Theorem-Prover/HOL.git
 cd HOL
-git checkout 135409003
+git checkout b7716bd92
 
 poly < tools/smart-configure.sml
 bin/build --seq=tools/sequences/kernel
@@ -42,7 +42,7 @@ cd ..
 ```
 git clone https://github.com/CakeML/cakeml.git
 cd cakeml
-git checkout 112863b9c 
+git checkout 76ed0b0508
 ```
 
 
