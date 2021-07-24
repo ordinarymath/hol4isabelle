@@ -12,8 +12,8 @@ ML \<open>Holmake run (make_modules [
   "ml_translatorScript",
   "ml_pmatchScript",
   "ml_optimiseScript"
-] ) "../../cakeml/translator"\<close>
+] ) "../../../cakeml/translator"\<close>
 
-ML\<open>Holmake run (make_modules ["std_preludeScript"]) "../../cakeml/translator"\<close> 
+ML\<open>Holmake run (make_modules ["std_preludeScript"]) "../../../cakeml/translator"\<close> 
 
 end

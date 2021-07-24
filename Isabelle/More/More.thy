@@ -70,7 +70,6 @@ ML \<open>Holmake run make_theories "../../HOL/src/n-bit"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/finite_maps"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/ring/src"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/integer"\<close>
-
 ML \<open>Holmake run make_theories "../../HOL/src/topology"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/transfer"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/update"\<close>

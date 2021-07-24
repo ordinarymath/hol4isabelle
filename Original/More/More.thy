@@ -65,7 +65,6 @@ ML \<open>Holmake run make_theories "../../HOL/src/quotient/src"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/hol88"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/bag"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/n-bit"\<close>
-ML \<open>Context_Var.sorted_allocations (Context.the_generic_context())\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/finite_maps"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/ring/src"\<close>
 ML \<open>Holmake run make_theories "../../HOL/src/integer"\<close>
