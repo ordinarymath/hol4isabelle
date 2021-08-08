@@ -235,9 +235,9 @@ lemma h4_exp_transfer[transfer_rule]: "(rh4_nat ===> rh4_nat ===> rh4_nat) (^) H
 
 subsection \<open>Transfer comparisons\<close>
 
-lemmas hol4_leq_def = HOL4_Core_Isabelle.arithmetic\<E>036\<E>060\<E>061_def [untransferred]
-lemmas hol4_gr_def =  HOL4_Core_Isabelle.arithmetic\<E>036\<E>062_def [untransferred]
-lemmas hol4_geq_def = HOL4_Core_Isabelle.arithmetic\<E>036\<E>062\<E>061_def [untransferred]
+lemmas hol4_leq_def = Core.arithmetic\<E>036\<E>060\<E>061_def [untransferred]
+lemmas hol4_gr_def =  Core.arithmetic\<E>036\<E>062_def [untransferred]
+lemmas hol4_geq_def = Core.arithmetic\<E>036\<E>062\<E>061_def [untransferred]
 
 lemma h4_leq_transfer[transfer_rule]: "(rh4_nat ===> rh4_nat ===> (=)) (\<le>) HOL4\<open>(<=)\<close>"
   unfolding hol4_leq_def Nat.le_eq_less_or_eq
