@@ -15,7 +15,7 @@ ML \<open>Holmake run make_theories "../../../HOL/src/floating-point"\<close>
 subsection \<open>misc dependencies\<close>
 ML \<open>Context_Var.bind_ref "CakeML_Misc_Deps"\<close>
 ML \<open>Holmake run make_theories "../../../HOL/examples/fun-op-sem/lprefix_lub"\<close>
-ML \<open>Holmake run make_theories ".././../HOL/examples/machine-code/hoare-triple"\<close>
+ML \<open>Holmake run make_theories "../../../HOL/examples/machine-code/hoare-triple"\<close>
 ML \<open>Holmake run make_theories "../../../HOL/examples/balanced_bst"\<close>
 ML \<open>Holmake run make_theories "../../../HOL/examples/formal-languages"\<close>
 ML \<open>Holmake run make_theories "../../../HOL/examples/formal-languages/context-free"\<close>
