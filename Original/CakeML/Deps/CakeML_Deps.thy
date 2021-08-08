@@ -3,6 +3,14 @@ theory CakeML_Deps
 begin
 
 declare [[ML_environment="HOL4"]]
+subsection \<open>additional dependencies from Large\<close>
+ML \<open>Context_Var.bind_ref "CakeML_Large_Deps"\<close>
+ML \<open>
+List.app Load.mark_loaded
+  ["prove_real_assumsScript", "prove_real_assumsTheory" (*also in Holmakefile excluded *)]
+\<close>
+ML \<open>Holmake run make_theories "../../../HOL/src/real"\<close>
+ML \<open>Holmake run make_theories "../../../HOL/src/floating-point"\<close>
 
 subsection \<open>misc dependencies\<close>
 ML \<open>Context_Var.bind_ref "CakeML_Misc_Deps"\<close>
@@ -13,17 +21,6 @@ ML \<open>Holmake run make_theories "../../../HOL/examples/formal-languages"\<cl
 ML \<open>Holmake run make_theories "../../../HOL/examples/formal-languages/context-free"\<close>
 ML \<open>Holmake run (make_modules ["vec_mapScript"]) "../../../HOL/examples/formal-languages/regular"\<close>
 ML \<open>Holmake run make_theories "../../../HOL/examples/formal-languages/regular"\<close>
-
-
-subsection \<open>additional dependencies from Large\<close>
-ML \<open>Context_Var.bind_ref "CakeML_Large_Deps"\<close>
-ML \<open>
-List.app Load.mark_loaded
-  ["prove_real_assumsScript", "prove_real_assumsTheory" (*also in Holmakefile excluded *)]
-\<close>
-ML \<open>Holmake run make_theories "../../../HOL/src/real"\<close>
-ML \<open>Holmake run make_theories "../../../HOL/src/floating-point"\<close>
-
 
 subsection \<open>cakeml dependencies\<close>
 ML \<open>Context_Var.bind_ref "CakeML_Deps"\<close>
