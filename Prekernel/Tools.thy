@@ -9,8 +9,25 @@ ML \<open>Context_Var.bind_ref "HOL4_Tools"\<close>
 ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_base-sig.sml"
 ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_join.sml"
 ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_lrtable.sml"
+(* Version of MLY_stream with unsychronized refs *)
+ML\<open>
+structure Stream :> STREAM =
+struct
+   open Uref
+   datatype 'a str = EVAL of 'a * 'a str Uref.t | UNEVAL of (unit->'a)
 
-ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_stream.sml"
+   type 'a stream = 'a str Uref.t
+
+   fun get s = (case !s of
+       EVAL t => t
+     | UNEVAL f =>
+	    let val t = (f(), Uref.new(UNEVAL f)) in s := EVAL t; t end)
+
+   fun streamify f = Uref.new(UNEVAL f)
+   fun cons(a,s) = Uref.new(EVAL(a,s))
+
+end;
+\<close>
 ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_parser2.sml"
 
 text "poly-init"
