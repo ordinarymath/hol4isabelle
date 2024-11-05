@@ -391,7 +391,7 @@ val _ = transfer_thms :=
 \<close>
 
 
-ML \<open>
+ML_old \<open>
 structure Bool2 = struct
 (* bool Script part 2 continue building up kernel primitives using Isabelle/HOL axioms*)
 local
@@ -664,8 +664,8 @@ fun SPEC (KernelTypes.Ht t) th =
     val tv_btv = Thm.beta_conversion false tv
       |> Drule.arg_cong_rule cTrueprop
     val btv = Thm.cconcl_of tv_btv |> Thm.dest_equals |> snd
-    val thm1 = Thm.instantiate ([((("'a", 0), Isabelle.sort), P_argty)],
-      [((("x",0),Thm.typ_of P_argty),t),
+    val thm1 = Thm.instantiate (Isabelle.TVars.make [((("'a", 0), Isabelle.sort), P_argty)],
+      Isabelle.Vars.make [((("x",0),Thm.typ_of P_argty),t),
       ((("P", 0), Isabelle.Term.-->(P_argty |> Thm.typ_of, bool)), P),
       ((("R", 0), bool), btv |> Thm.dest_arg)]) bool_allE
     val thm2 = Thm.implies_elim thm1 th
@@ -720,7 +720,9 @@ fun GEN (Ht x) th =
       val P = Thm.lambda x (Thm.cconcl_of (Thm' th) |> Thm.dest_arg)
       val tv = Thm.apply P x
       val tyx = Thm.ctyp_of_cterm x
-      val all_inst = Thm.instantiate ([((("'a",0),sort), tyx)],[((("P",0),Isabelle.Term.-->(tyx |> Thm.typ_of, bool)), P)]) bool_allI
+      val all_inst = Thm.instantiate (
+                        Isabelle.TVars.make [((("'a",0),sort), tyx)],
+                        Isabelle.Vars.make [((("P",0),Isabelle.Term.-->(tyx |> Thm.typ_of, bool)), P)]) bool_allI
 
       val btv_tv = Thm.beta_conversion false tv
         |> Drule.arg_cong_rule cTrueprop |> Thm.symmetric
@@ -911,8 +913,8 @@ fun EXISTS (Ht fm,Ht tm) th =
   let val P = fm |> Thm.dest_arg (* Trueprop *)
       val tv = Thm.apply P tm
       val tyx = Thm.ctyp_of_cterm tm
-      val ex_inst = Thm.instantiate ([((("'a",0),Isabelle.sort),tyx)],
-      [((("P",0), (Thm.typ_of tyx) --> bool),P),((("x",0), (Thm.typ_of tyx)), tm)]) bool_exI
+      val ex_inst = Thm.instantiate (Isabelle.TVars.make [((("'a",0),Isabelle.sort),tyx)],
+      Isabelle.Vars.make [((("P",0), (Thm.typ_of tyx) --> bool),P),((("x",0), (Thm.typ_of tyx)), tm)]) bool_exI
       val btv_tv = Thm.beta_conversion false tv
         |> Drule.arg_cong_rule cTrueprop |> Thm.symmetric
       val btv = Thm.cconcl_of btv_tv |> Thm.dest_equals |> fst
@@ -1008,9 +1010,9 @@ fun CHOOSE (KernelTypes.Ht v, ex_thm) thm =
       |> Thm.dest_arg (* exists *)
     val tv = Thm.apply P v
     val ctv = mk_cTrueprop tv
-    val P_argty = P |> Thm.dest_abs (SOME vn) |> fst |> Thm.ctyp_of_cterm
-    val thm1 = Thm.instantiate ([((("'a", 0), Isabelle.sort), P_argty)],
-      [((("P", 0), Isabelle.Term.-->(P_argty |> Thm.typ_of, bool)), P),
+    val P_argty = P |> Thm.dest_abs_fresh vn |> fst |> Thm.ctyp_of_cterm
+    val thm1 = Thm.instantiate ( Isabelle.TVars.make [((("'a", 0), Isabelle.sort), P_argty)],
+      Isabelle.Vars.make [((("P", 0), Isabelle.Term.-->(P_argty |> Thm.typ_of, bool)), P),
       ((("Q", 0), bool), Thm.cconcl_of thm |> Thm.dest_arg)]) bool_exE
     val thm2 = Thm.implies_elim thm1 ex_thm
     val tv_btv = Thm.beta_conversion false tv (* TODO: handle if this fails*)
@@ -1097,7 +1099,7 @@ end
 subsection \<open>now the rest of bool theory\<close>
 ML \<open>structure HolKernel = struct open HolKernel open Thm end\<close>\<comment> \<open>add the additional Thm stuff on bool\<close>
 
-ML \<open>
+ML_old \<open>
 local
 open Bool1 Bool2
 (*bool script part 3*)

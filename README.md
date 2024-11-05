@@ -48,15 +48,14 @@ git checkout 76ed0b0508
 
 ### Isabelle
 
-Download Isabelle2021 from ``https://isabelle.in.tum.de/website-Isabelle2021/``.
+Download Isabelle2024 from ``https://isabelle.in.tum.de/website-Isabelle2024/``.
 From here on we refer to the main Isabelle executable `Isabelle2021/bin/isabelle` as simply `isabelle`
 
 Alternatively (in order to work with the repository):
 ```
-hg clone http://isabelle.in.tum.de/repos/isabelle/rev/Isabelle2021
-isabelle components -I
-isabelle components -a
-isabelle build -b HOL
+hg clone http://isabelle.in.tum.de/repos/isabelle/rev/Isabelle2024
+cd isabelle
+Admin/init
 ```
 
 ## Run

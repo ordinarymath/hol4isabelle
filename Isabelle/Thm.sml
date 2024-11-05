@@ -43,8 +43,8 @@ fun of_meta thm =
   in
     implies_elim
       (Thm.instantiate
-        ([((("'a", 0), Isabelle.sort), cty)],
-          [((("A",0), ty), lhs), ((("B",0), ty), rhs)])
+        (Isabelle.TVars.make [((("'a", 0), Isabelle.sort), cty)],
+         Isabelle.Vars.make [((("A",0), ty), lhs), ((("B",0), ty), rhs)])
           Isabelle.meta_eq_to_obj_eq) thm
   end
 
@@ -57,8 +57,8 @@ fun meta_of thm =
   in
     implies_elim
       (Thm.instantiate
-        ([((("'a", 0), Isabelle.sort), cty)],
-          [((("x",0), ty), lhs), ((("y",0), ty), rhs)])
+        (Isabelle.TVars.make [((("'a", 0), Isabelle.sort), cty)],
+         Isabelle.Vars.make [((("x",0), ty), lhs), ((("y",0), ty), rhs)])
       Isabelle.eq_reflection) thm
   end
 
@@ -71,8 +71,8 @@ fun meta_prop_eq thm =
   in
     implies_elim
       (Thm.instantiate
-        ([],
-          [((("P",0), HOLogic.boolT), lhs), ((("Q",0), HOLogic.boolT), rhs)])
+        (Isabelle.TVars.empty,
+         Isabelle.Vars.make [((("P",0), HOLogic.boolT), lhs), ((("Q",0), HOLogic.boolT), rhs)])
       Isabelle.obj_eq_to_meta_prop_eq) thm
   end
 
@@ -118,7 +118,9 @@ in
 fun REFL (Ht ct) =
   let
     val cty = ctyp_of_cterm ct
-  in Thm.instantiate ([inst_type "'a" cty], [inst_term "t" (typ_of cty) ct]) Isabelle.refl end
+  in Thm.instantiate 
+       (Isabelle.TVars.make [inst_type "'a" cty], 
+        Isabelle.Vars.make [inst_term "t" (typ_of cty) ct]) Isabelle.refl end
   handle THM e => raise ERR "REFL" (string_of_THM e)
        | CTERM e => raise ERR "REFL" (string_of_CTERM e)
 
@@ -164,8 +166,8 @@ fun TRANS thm1 thm2 =
     implies_elim
       (implies_elim
         (Thm.instantiate
-          ([((("'a", 0), Isabelle.sort), cty)],
-            [((("r",0), ty), r), ((("s",0), ty), s), ((("t",0), ty), t)])
+          (Isabelle.TVars.make [((("'a", 0), Isabelle.sort), cty)],
+           Isabelle.Vars.make [((("r",0), ty), r), ((("s",0), ty), s), ((("t",0), ty), t)])
         Isabelle.trans) thm1) thm2
   end
   handle THM e => raise ERR "TRANS" (string_of_THM e)
@@ -184,7 +186,8 @@ fun DISCH (Ht P) thm =
   in
       Thm.implies_elim
         (Thm.instantiate
-          ([], [((("P",0), HOLogic.boolT), P), ((("Q",0), HOLogic.boolT), Q)]) Isabelle.impI)
+          (Isabelle.TVars.empty, 
+           Isabelle.Vars.make [((("P",0), HOLogic.boolT), P), ((("Q",0), HOLogic.boolT), Q)]) Isabelle.impI)
         metaI
   end
   handle THM e => raise ERR "DISCH" (string_of_THM e)
@@ -224,16 +227,19 @@ fun with_meta f thm = thm |> Isabelle.Drule.implies_intr_hyps |> f |> assume_met
 local
 (* Free variables that occur in thm but are not part of the substitution are instantiated
    by themselves. This avoids schematic variables in the resulting theorem *)
+val a = Thm.fold_terms ;
+
 fun instantiate_all_frees (theta:(term,term) Lib.subst) thm =
   let
     fun compare_redex (x,y) = Term.compare (fst x,fst y)
-    val thm_frees = Thm.add_frees thm [] |> map Ht
+    (*used to be in more_thm.ML*)
+    val thm_frees = Isabelle.add_frees thm [] |> map Ht
     val sub_ident = HOLset.fromList compare_redex (zip thm_frees thm_frees)
     val theta_set = HOLset.fromList compare_redex (map (fn x => (#redex x,#residue x)) theta)
     val sub = HOLset.union (theta_set, (HOLset.difference (sub_ident,theta_set)))
-  in Thm.instantiate_frees ([],
-      map (fn (r,s) => (Preterm.dest_Free (term_of_Ht r), dest_Ht s))
-      (HOLset.listItems sub)) thm
+  in Thm.instantiate_frees (Isabelle.TFrees.empty,
+      Isabelle.Frees.make (map (fn (r,s) => (Preterm.dest_Free (term_of_Ht r), dest_Ht s))
+      (HOLset.listItems sub))) thm
   end
 in
 fun INST [] thm = thm
@@ -245,7 +251,9 @@ end
 
 fun INST_TYPE [] thm = thm
   | INST_TYPE (theta:(hol_type, hol_type) Lib.subst) thm =
-  with_meta (Thm.instantiate_frees (map (fn s => (Preterm.dest_TFree (#redex s |> dest_Hty), certT (#residue s|> dest_Hty))) theta, [])) thm
+  with_meta (Thm.instantiate_frees 
+               (Isabelle.TFrees.make (map (fn s => (Preterm.dest_TFree (#redex s |> dest_Hty), certT (#residue s|> dest_Hty))) theta)
+                 , Isabelle.Frees.empty)) thm
   handle THM e => raise ERR "INST_TYPE" (string_of_THM e)
     | CTERM e => raise ERR "INST_TYPE" (string_of_CTERM e)
 
@@ -254,7 +262,10 @@ fun MP_imp thm1 thm2 =
   let
     val (P, Q) = dest_binop_thm thm1
     val thm1' =
-  implies_elim (Thm.instantiate ([], [((("P",0), HOLogic.boolT), P), ((("Q",0), HOLogic.boolT), Q)]) Isabelle.mp) thm1
+  implies_elim (Thm.instantiate 
+                  (Isabelle.TVars.empty,
+                  Isabelle.Vars.make [((("P",0), HOLogic.boolT), P), ((("Q",0), HOLogic.boolT), Q)]) 
+                  Isabelle.mp) thm1
     (* Make sure that a copy of P in the hyps of thm1 is identical, not just alpha-equivalent *)
     (* Uncomment if there are strange debug messages with alpha-equivalent terms*)
     (*val special = HOLset.member (hypset thm1,Ht P) (*andalso (not (HOLset.member (hypset_strict thm1, Ht P)))*)
@@ -279,8 +290,8 @@ fun SYM thm =
   in
     implies_elim
       (Thm.instantiate
-        ([((("'a", 0), Isabelle.sort), cty)],
-          [((("s",0), ty), lhs), ((("t",0), ty), rhs)])
+        (Isabelle.TVars.make [((("'a", 0), Isabelle.sort), cty)],
+         Isabelle.Vars.make [((("s",0), ty), lhs), ((("t",0), ty), rhs)])
       Isabelle.sym) thm
   end
   handle THM e => raise ERR "SYM" (string_of_THM e)
@@ -521,7 +532,7 @@ fun bool_ex_conv ct =
       | SOME r => #bool_ex_Ex r
 
   in
-    Thm.instantiate ([((("'a", 0), sort), a)],[]) bool_ex_Ex
+    Thm.instantiate (Isabelle.TVars.make [((("'a", 0), sort), a)],Isabelle.Vars.empty) bool_ex_Ex
   end
 
 fun prim_specification1 thyname cname th =
@@ -542,8 +553,9 @@ fun prim_specification1 thyname cname th =
     val def_thm' = Thm.unvarify_global thy def_thm
     val c = Thm.cprop_of def_thm' |> Thm.dest_equals |> #1
     val th' = Conv.fconv_rule (Conv.arg_conv (Conv.fun_conv bool_ex_conv)) th
-    val exE_some_inst = Thm.instantiate ([((("'a", 0), Isabelle.sort), cty)],
-        [((("P", 0), typ_of Pty), dest_Ht P_x),
+    val exE_some_inst = Thm.instantiate (
+        Isabelle.TVars.make [((("'a", 0), Isabelle.sort), cty)],
+        Isabelle.Vars.make [((("P", 0), typ_of Pty), dest_Ht P_x),
          ((("c", 0), typ_of cty), c)]) exE_some
     val res0 = Drule.OF(exE_some_inst, [th', def_thm'])
     val beta_eq = Thm.cconcl_of res0 |> Conv.arg_conv (Thm.beta_conversion false)
@@ -599,7 +611,9 @@ fun gen_prim_specification thyname th = let
   val checked     = check_vars (term_of_Ht body) (map (apsnd dest_Hty #> Preterm.mk_var) stys) SPEC_ERR
 
   val const_naming = map (fn (s, ty) => pair (encode_varname s, dest_Hty ty) (def_Free thyname s ty)) stys
-  fun define_const eq thy = define_or_retrieve_const (Term_Subst.instantiate_frees ([],const_naming) eq) thy
+  fun define_const eq thy = define_or_retrieve_const (Term_Subst.instantiate_frees (
+                                                                  Isabelle.TFrees.empty ,
+                                                                  Isabelle.Frees.make const_naming) eq) thy
   fun define_consts thy = let
     val (thms, thy') = fold_map define_const (map (term_of_Ht #> HOLogic.mk_Trueprop) hyps) thy
     val const_names = thms |> map (Thm.concl_of #> HOLogic.dest_Trueprop #> HOLogic.dest_eq #> fst #> dest_Const #> fst)
@@ -609,7 +623,7 @@ fun gen_prim_specification thyname th = let
     in ((thms,const_naming'),thy') end
   val (thms,const_naming) = (Context.>>> (Context.map_theory_result define_consts))
   val goal = Drule.implies_intr_hyps th
-  val goal_inst = Thm.instantiate_frees ([],const_naming) goal
+  val goal_inst = Thm.instantiate_frees (Isabelle.TFrees.empty , Isabelle.Frees.make const_naming) goal
   val thm = Drule.OF (goal_inst, rev thms)
   (* Add the constants to the HOL4 Context *)
   val _ = map (fn (s, ty) => bind thyname s ty) stys
@@ -648,7 +662,7 @@ fun ABS_CONV conv ct =
 
 local 
 val absprefix = "%%absvar%%"
-fun dest_absvar i = Isabelle.Thm.dest_abs (SOME (KernelSig.encode_varname (absprefix ^ Int.toString i)))
+fun dest_absvar i = Isabelle.Thm.dest_abs_fresh (KernelSig.encode_varname (absprefix ^ Int.toString i))
 fun SUBST_conv' idx (r: (term, thm) Lib.subst) ct1 ct2 =
   let 
     val t1 = term_of_Ht ct1

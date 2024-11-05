@@ -35,12 +35,12 @@ end
 fun Ht2 (a, b) = (Ht a, Ht b)
 fun dest_abs_absvar (Ht ct) =
   case (term_of ct) of
-    (Abs (_,_,_)) => Isabelle.Thm.dest_abs (SOME (KernelSig.encode_varname (absvar ()))) ct |> Ht2
+    (Abs (_,_,_)) => Isabelle.Thm.dest_abs_fresh (KernelSig.encode_varname (absvar ())) ct |> Ht2
   | _ => raise ERR "dest_abs" "not a lambda abstraction"
 
 fun dest_abs_name n (Ht ct) = 
   case (term_of ct) of
-    (Abs (_,_,_)) => Isabelle.Thm.dest_abs (SOME (KernelSig.encode_varname n)) ct |> Ht2
+    (Abs (_,_,_)) => Isabelle.Thm.dest_abs_fresh (KernelSig.encode_varname n) ct |> Ht2
   | _ => raise ERR "dest_abs" "not a lambda abstraction"
 
 fun exists_const id =
@@ -190,8 +190,8 @@ fun dest_abs (Ht ct) =
     (Abs (Name,Ty,Body)) => 
       (if clash Name Body then 
         (case Preterm.variant (Preterm.free_vars Body) (Free (Name,Ty)) of Free(vn, vty) =>
-              Isabelle.Thm.dest_abs (SOME vn) ct)
-      else Isabelle.Thm.dest_abs NONE ct)
+              Isabelle.Thm.dest_abs_fresh vn ct)
+      else Isabelle.Thm.dest_abs_global ct)
       |> Ht2
   | _ => raise ERR "dest_abs" "not a lambda abstraction"
 end
@@ -202,7 +202,7 @@ local fun vars (v as (Free _)) ct A  = if is_absvar v then A else op_insert hter
           in vars Rand cRand (vars Rator cRator A)
           end
         | vars (Abs(v,ty,Body)) ct A = 
-          let val (cVar,_) = Isabelle.Thm.dest_abs NONE (dest_Ht ct) |> Ht2
+          let val (cVar,_) = Isabelle.Thm.dest_abs_global (dest_Ht ct) |> Ht2
               val (_,cBody) = dest_abs_absvar ct
           in vars Body cBody (vars (Free (v,ty)) cVar A)
           end
@@ -362,8 +362,8 @@ fun inst [] ht = ht
           SOME (((s, maxidx), Isabelle.sort), Type_Cache.cert ty)
         | inst_of _ = NONE
       val redexes = map_filter inst_of theta
-    in (Isabelle.Thm.generalize_cterm (map (#1 o #1 o #1) redexes, []) maxidx ct
-        |> instantiate_cterm (redexes, [])
+    in (Isabelle.Thm.generalize_cterm (Isabelle.Names.make_set (map (#1 o #1 o #1) redexes), Isabelle.Names.empty) maxidx ct
+        |> instantiate_cterm (Isabelle.TVars.make redexes, Isabelle.Vars.empty)
         |> Ht)
     handle CTERM (s, _) => raise INST ("caught a CTERM (" ^ s ^ ", ...)")
     end
@@ -426,7 +426,7 @@ local fun peel f tm A =
         case f ct of
           SOME ct' => (case term_of ct'
                       of Abs _ =>
-                        let val (cHead,cBody) = Isabelle.Thm.dest_abs NONE ct'
+                        let val (cHead,cBody) = Isabelle.Thm.dest_abs_global ct'
                         in cpeel f cBody (cHead::A)
                         end
                       | _ => (A,ct))

@@ -15,10 +15,10 @@ signature TYPED_EVALUATION = sig
 end
 
 val HOL4_flags: ML_Compiler.flags =
-      {environment = "HOL4", redirect = true, verbose = true,
+      {environment = "HOL4", redirect = true, verbose = true, catch_all = true,
         debug = NONE, writeln = writeln, warning = warning}
 val IsaHOL4_flags: ML_Compiler.flags =
-      {environment = "Isabelle>HOL4", redirect = true, verbose = true,
+      {environment = "Isabelle>HOL4", redirect = true, verbose = true, catch_all = true,
         debug = NONE, writeln = writeln, warning = warning}
 
 structure Typed_Evaluation: TYPED_EVALUATION = struct
@@ -92,7 +92,7 @@ fun eval_exn (Token {id, ml_type, unwrap, ...}) source ctxt =
     fun expression range name constraint body ants =
       ML_Context.exec (fn () =>
       ML_Context.eval HOL4_flags (#1 range)
-      (ML_Lex.read "Context.put_generic_context (SOME (let val " @ ML_Lex.read_set_range range name @
+      (ML_Lex.read "Context.put_generic_context (SOME (let val " @ ML_Lex.read_range range name @
        ML_Lex.read (": " ^ constraint ^ " =") @ ants @
        ML_Lex.read ("in " ^ body ^ " end (Context.the_generic_context ())));")));
     val result =

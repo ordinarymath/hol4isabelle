@@ -123,6 +123,8 @@ lemma Quotient_rh4_nat: "Quotient (=) convert_nat convert_nat' rh4_nat_raw"
   using bij_convert_nat refl
   by (rule Quotient_bijI)
 
+lemma reflp_equality:"reflp (=)"
+  by(fact reflp_on_equality)
 setup_lifting Quotient_rh4_nat reflp_equality
   \<comment> \<open>perhaps it is easier to set up a locale with
     all of the transfer setup, such that one can keep the original definition of the quotient relation.

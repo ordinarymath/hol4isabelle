@@ -13,9 +13,12 @@ open Thm
 local
 val tvar = (("'a", 0), @{sort type})
 val id_term = Thm.cterm_of (Context.the_local_context()) (Abs ("x", TVar tvar, Bound 0))
+
 in
+val a = Term_Subst.generalizeT
+val a = Term.add_frees
 (* TODO: add direct implementation in the kernel? *)
-fun free (s, cty) = Thm.instantiate_cterm ([(tvar, cty)], []) (#1 (Thm.dest_abs (SOME s) id_term))
+fun free (s, cty) = Thm.instantiate_cterm (TVars.make [(tvar, cty)], Vars.empty) (#1 (Thm.dest_abs_fresh s id_term))
 end
 end
 \<close>
@@ -43,12 +46,12 @@ fun typedef_tac ex_equiv def_thm =
 local
 fun EXISTS fm th exI =
   let val instT = rev (Term.add_tvars (Thm.prop_of th) []) |> map (fn v as ((a, _), S) => (v, TFree (a, S)));
-      val th = Thm.instantiate (map (apsnd (Thm.global_ctyp_of @{theory})) instT,[]) th
+      val th = Thm.instantiate (TVars.make (map (apsnd (Thm.global_ctyp_of @{theory})) instT),Vars.empty) th
       val rep = th |> Thm.cconcl_of |> Thm.dest_arg (* Trueprop *) |> Thm.dest_arg
       val P = fm |> Thm.dest_arg (* Trueprop *) |> Thm.dest_arg
       val tv = Thm.apply P rep
       val tyrep = Thm.ctyp_of_cterm rep
-      val ex_inst = Thm.instantiate ([((("'a",0),@{sort "HOL.type"}),tyrep)],
+      val ex_inst = Thm.instantiate (TVars.make [((("'a",0),@{sort "HOL.type"}),tyrep)], Vars.make
       [((("P",0), (Thm.typ_of tyrep) --> @{typ bool}),P),((("x",0), Thm.typ_of tyrep), rep)]) exI
       val btv_tv = Thm.beta_conversion false tv
         |> Drule.arg_cong_rule cTrueprop |> Thm.symmetric
@@ -83,6 +86,11 @@ ML \<open>structure Isabelle =
     structure Syntax = Syntax
     structure Specification = Specification
     structure Symtab = Symtab
+    structure TVars = TVars
+    structure Vars = Vars
+    structure Names = Names
+    structure TFrees = TFrees
+    structure Frees = Frees
 
     val sort = @{sort "HOL.type"}
     val alpha = @{typ 'a}
@@ -111,6 +119,8 @@ ML \<open>structure Isabelle =
     val fold = fold
     val fold_map = fold_map
     val enable_debug = enable_debug
+    (*from old function that was removed in more_thms.thy*)
+    val add_frees = Thm.fold_atomic_cterms {hyps = true}  (K true) (fn a => (is_Free (Thm.term_of a)) ? insert (op aconvc) a);
 
     exception ERROR = ERROR
   end
@@ -143,6 +153,9 @@ ML \<open>structure Isabelle =
   val auto_tac = auto_tac
   val yield_singleton = yield_singleton
   val transfer_thms = transfer_thms
+
+
+
 \<close>
 end
 

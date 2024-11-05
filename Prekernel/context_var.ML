@@ -76,7 +76,7 @@ fun bind_ref' environment info s =
   let
     val () = Input.string ("fun " ^ s ^ " " ^ s ^ "_arg = Context_Var.var \"" ^ info ^ "\"" ^ s ^ "_arg;")
       |> ML_Context.eval_source
-        {environment = environment, redirect = true, verbose = false,
+        {environment = environment, redirect = true, verbose = false, catch_all = true,
           debug = NONE, writeln = K (), warning = K ()}
   in bind_existing_ref environment s
   end

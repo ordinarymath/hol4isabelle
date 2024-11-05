@@ -31,7 +31,7 @@ end;
 ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_parser2.sml"
 
 text "poly-init"
-ML_file "../HOL/tools-poly/poly/Mosml.sml"
+ML_file_old "../HOL/tools-poly/poly/Mosml.sml"
 ML_file "../HOL/tools-poly/poly/Binarymap.sig"
 ML_file "../HOL/tools-poly/poly/Binarymap.sml"
 ML_file "../HOL/tools-poly/poly/Binaryset.sig"
@@ -60,7 +60,7 @@ ML_file "../HOL/tools/Holmake/Holdep.sig"
 ML_file "../HOL/tools/Holmake/Holdep.sml"
 ML_file "../HOL/tools/Holmake/Holmake_tools_dtype.sml"
 ML_file "../HOL/tools/Holmake/Holmake_tools.sig"
-ML_file "../HOL/tools/Holmake/Holmake_tools.sml"
+ML_file_old "../HOL/tools/Holmake/Holmake_tools.sml"
 ML \<open>structure Holmake_tools : Holmake_tools = struct
   open Holmake_tools
   fun getWidth () = 80
@@ -75,9 +75,9 @@ ML_file "../HOL/tools/Holmake/regexpMatch.sig"
 ML_file "../HOL/tools/Holmake/regexpMatch.sml"
 ML_file "../HOL/tools/Holmake/parse_glob.sig"
 ML_file "../HOL/tools/Holmake/parse_glob.sml"
-ML_file "../HOL/tools/Holmake/holdeptool.sml"
+ML_file_old "../HOL/tools/Holmake/holdeptool.sml"
 ML_file "../HOL/tools/Holmake/internal_functions.sig"
-ML_file "../HOL/tools/Holmake/internal_functions.sml"
+ML_file_old "../HOL/tools/Holmake/internal_functions.sml"
 ML_file "../HOL/tools/Holmake/Holmake_types.sig"
 ML_file "../HOL/tools/Holmake/Holmake_types.sml"
 ML_file "../HOL/tools/Holmake/HM_GraphBuildJ1.sig"
@@ -90,7 +90,7 @@ ML_file "../HOL/tools/Holmake/poly/GraphExtra.sig"
 ML_file "../HOL/tools/Holmake/poly/GraphExtra.sml"
 ML_file "../HOL/tools/Holmake/BuildCommand.sig"
 ML_file "../HOL/tools/Holmake/ReadHMF.sig"
-ML_file "../HOL/tools/Holmake/ReadHMF.sml"
+ML_file_old "../HOL/tools/Holmake/ReadHMF.sml"
 
 ML \<open>structure CompilerSpecific :>
   sig
@@ -99,7 +99,7 @@ ML \<open>structure CompilerSpecific :>
 struct
 
 fun quietbind s =
-  ML_Compiler.eval {debug = NONE, environment="HOL4", redirect = false, verbose = false,
+  ML_Compiler.eval {debug = NONE, environment="HOL4", redirect = false, verbose = false, catch_all = true,
   warning = fn _ => (), writeln = fn _ => ()} Position.none (ML_Lex.tokenize s)
 end
 \<close> \<comment> \<open>not

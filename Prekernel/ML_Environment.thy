@@ -1,11 +1,32 @@
 theory ML_Environment
   imports Pure
+  keywords "ML_file_old" :: thy_load % "ML"
+and "ML_old" :: thy_decl % "ML"
 begin
 
+ML\<open>
+local
+val semi = Scan.option \<^keyword>\<open>;\<close>;
+
+val _ =
+  Outer_Syntax.command \<^command_keyword>\<open>ML_file_old\<close> "read and evaluate Isabelle/ML file"
+    (Resources.parse_file --| semi >> (ML_File.command "" true) NONE);
+in
+end;
+val _ =
+  Outer_Syntax.command \<^command_keyword>\<open>ML_old\<close> "ML text within theory or local theory"
+    (Parse.ML_source >> (fn source =>
+      Toplevel.generic_theory
+        (Local_Theory.touch_ml_env #>
+          ML_Context.exec (fn () =>
+            ML_Context.eval_source (ML_Compiler.verbose true {environment = "", redirect = false, verbose = false, catch_all = true,
+    debug = NONE, writeln = writeln, warning = warning}) source) #>
+          Local_Theory.propagate_ml_env)));
+\<close>
 subsection \<open>Prelude: Some examples that illustrate how sources and markup work\<close>
 
 ML \<open>val flags: ML_Compiler.flags =
-      {environment = "Isabelle", redirect = true, verbose = true,
+      {environment = "Isabelle", redirect = true, verbose = true, catch_all = true,
         debug = NONE, writeln = writeln, warning = warning};
 \<close>
 ML \<open>val src = \<open>val x = 41 + 1 val y = "a + b" fun f x = x + x val g = f\<close>\<close>
@@ -70,7 +91,7 @@ subsection \<open>The HOL4 Quote Filter\<close>
 declare [[ML_environment = "HOL4_bootstrap"]]\<comment> \<open>won't compile in Isabelle/ML\<close>
 ML_file "../HOL/tools/Holmake/QuoteFilter.sml"
 ML_file "../HOL/tools/Holmake/QFRead.sig"
-ML_file "../HOL/tools/Holmake/QFRead.sml"
+ML_file_old "../HOL/tools/Holmake/QFRead.sml"
 declare [[ML_environment = "HOL4_bootstrap>Isabelle"]]
 ML \<open>structure QFRead = QFRead\<close>
 ML \<open>structure QuoteFilter = QuoteFilter\<close>
@@ -252,8 +273,8 @@ ML \<open>
 (* Maintaining file contents in theory context *)
 structure File_Store :
 sig
-  val store : string -> (theory -> Token.file list) -> theory -> theory
-  val load : theory -> string -> (theory -> Token.file list) option
+  val store : string -> (theory -> Token.file) -> theory -> theory
+  val load : theory -> string -> (theory -> Token.file) option
   val lines_of : theory -> string -> string list
   val add_dir : string -> string list
   val defined : theory -> string -> bool
@@ -264,7 +285,7 @@ struct
 
 structure Data = Theory_Data
 (
-  type T = (theory -> Token.file list) Symtab.table;
+  type T = (theory -> Token.file) Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
   fun merge data = Symtab.merge (K true) data;
@@ -279,27 +300,26 @@ fun delete s = Data.map (Symtab.delete s)
 fun load thy s = Symtab.lookup (Data.get thy) s
 
 fun lines_of thy s = case load thy s of NONE => error ("File_Store.read: no such file: " ^ s)
-  | SOME f =>
-    case f thy of
-      [file] => #lines file
-    | _ => error "File_Store.read: not a singleton file"
+  | SOME f => (#lines (f thy))
+
 
 fun master_path thy f = Path.append (Resources.master_directory thy) (Path.explode f)
 
 fun files_in_dir thy dir pos =
   let
     val master = master_path thy ""
-    val dir = Resources.check_dir (Proof_Context.init_global thy) (SOME master) (Input.source false dir pos)
+    val dir = Resources.check_dir (Proof_Context.init_global thy) (SOME master) (Input.source false dir (pos,Position.none))
     val files = "find " ^ File.bash_path dir ^ " -iname '*.sml' -o -iname '*.sig' -maxdepth 1"
-      |> Bash.process
-      |> #out
+      |> Bash.script
+      |> Isabelle_System.bash_process
+      |> Process_Result.out
       |> String.fields (fn c => exists (fn d => c = d) [#"\n"])
       |> filter_out (fn x => x = "")
       |> map (Path.explode #> Path.file_name)
       |> filter_out (fn s => String.isSubstring "Theory.s" s(* sml or sig *)
         andalso s <> "Theory.sig" andalso s <> "Theory.sml")
          (* TODO: does that make sense? ensures to not load Theory files from disk *)
-  in files ~~ map (fn f => fn (thy:theory) => Command.read_file dir (Position.range_position pos) false (Path.basic f)) files 
+  in files ~~ map (fn f => fn (thy:theory) => (Resources.read_file dir (Path.basic f, pos))) files 
     (* TODO: This does not seem to be the proper way to do get a list of files in the directory...*)
   end
 
@@ -307,10 +327,10 @@ fun add_dir_setup dir pos thy =
   let
     val files = files_in_dir thy dir pos
   in
-    (map #1 files, fold (fn (f, fs) => store f (fs #> single)) files thy)
+    (map #1 files, fold (fn (f, fs) => store f fs) files thy)
   end
 
-fun add_dir dir = Context.>>> (Context.map_theory_result (add_dir_setup dir Position.no_range))
+fun add_dir dir = Context.>>> (Context.map_theory_result (add_dir_setup dir Position.none))
 
 
 end
@@ -320,22 +340,27 @@ ML \<open>
 (* TODO: This is a modified version of Isabelle/Pure/ML/ml_file.ML *)
 signature ML_FILE_GENERIC =
 sig
-  val setup: string -> bool option -> (theory -> Token.file list) ->
+  val setup: string -> bool option -> (theory -> Token.file) ->
     Context.generic -> Context.generic
 end;
 
 structure ML_File_Generic: ML_FILE_GENERIC =
 struct
 
-fun setup environment debug files gthy =
+fun setup environment debug file gthy =
   let
+    (*
     val [{src_path, lines, digest, pos}: Token.file] = files (Context.theory_of gthy);
-    val source = Input.source true (cat_lines lines) (pos, pos);
+    val source = Input.source true (cat_lines lines) (pos, pos);*)
+    val file = file (Context.theory_of gthy);
+    val provide = Resources.provide_file file;
+    val source = Token.file_source file;
 
-    val _ = Thy_Output.check_comments (Context.proof_of gthy) (Input.source_explode source);
+
+    val _ = Document_Output.check_comments (Context.proof_of gthy) (Input.source_explode source);
 
     val flags: ML_Compiler.flags =
-      {environment = environment, redirect = false, verbose = false,
+      {environment = environment, redirect = false, verbose = false, catch_all = true,
         debug = debug, writeln = writeln, warning = warning};
   in
     gthy
@@ -433,7 +458,7 @@ structure TextIO_Context = struct
         NONE => error ("TextIO_Context.openIn no such file: " ^ f)
       | SOME files =>
         let
-          val [{lines, ...}] = files thy
+          val {lines, ...} = files thy
           val () = Context.>>(Instreams.map (fn streams =>
             case Symtab.lookup streams f of
               SOME _ => error ("TextIO_Context.openIn already open: " ^ f)
@@ -508,7 +533,7 @@ structure TextIO_Context = struct
           val outstreams = Outstreams.get context
           val thy = Context.theory_of context
           val lines = case File_Store.load thy filename of NONE => []
-              | SOME prvd => let val [token] = prvd thy in rev (#lines token) end
+              | SOME prvd => let val token = prvd thy in rev (#lines token) end
         in case Symtab.lookup outstreams filename of
             NONE => Outstreams.put (Symtab.update (filename, (NONE, [], lines)) outstreams) context
           | SOME _ => error ("TextIO_Context.openOut already open: " ^ filename)
@@ -527,8 +552,8 @@ structure TextIO_Context = struct
         in
           (context
             |> Context.map_theory (File_Store.store stream
-                (K [{src_path=Path.explode stream, lines = lines,
-                  digest= SHA1.digest (String.concat lines), pos = Position.none}]))
+                (K {src_path=Path.explode stream, lines = lines,
+                  digest= SHA1.digest (String.concat lines), pos = Position.none}))
             |> Outstreams.put (Symtab.delete stream outstreams))
         end
     end)
@@ -681,11 +706,12 @@ end
 subsection \<open>Profiling support\<close>
 
 declare [[ML_environment="Isabelle"]]
+(*fixme
 ML \<open>fun profile_sorted f x =
   ML_Profiling.profile_time
     (sort (prod_ord int_ord string_ord)
     #> List.app (fn (i, x) => writeln (Int.toString i ^ "  " ^ x))) f x\<close>
 declare [[ML_environment="Isabelle>HOL4"]]
-ML  \<open>val profile_sorted = profile_sorted\<close>
+ML  \<open>val profile_sorted = profile_sorted\<close>*)
 
 end
