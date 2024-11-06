@@ -1,4 +1,5 @@
-theory Kernel_Isa imports Kernel_Sig_Isa
+theory Kernel_Isa 
+  imports Kernel_Sig_Isa
 begin                         
 
 subsection \<open>0\<close>

@@ -1,28 +1,13 @@
 theory ML_Environment
   imports Pure
-  keywords "ML_file_old" :: thy_load % "ML"
-and "ML_old" :: thy_decl % "ML"
 begin
 
-ML\<open>
-local
-val semi = Scan.option \<^keyword>\<open>;\<close>;
 
-val _ =
-  Outer_Syntax.command \<^command_keyword>\<open>ML_file_old\<close> "read and evaluate Isabelle/ML file"
-    (Resources.parse_file --| semi >> (ML_File.command "" true) NONE);
-in
-end;
-val _ =
-  Outer_Syntax.command \<^command_keyword>\<open>ML_old\<close> "ML text within theory or local theory"
-    (Parse.ML_source >> (fn source =>
-      Toplevel.generic_theory
-        (Local_Theory.touch_ml_env #>
-          ML_Context.exec (fn () =>
-            ML_Context.eval_source (ML_Compiler.verbose true {environment = "", redirect = false, verbose = false, catch_all = true,
-    debug = NONE, writeln = writeln, warning = warning}) source) #>
-          Local_Theory.propagate_ml_env)));
-\<close>
+
+declare[[ML_catch_all=true]]
+
+
+
 subsection \<open>Prelude: Some examples that illustrate how sources and markup work\<close>
 
 ML \<open>val flags: ML_Compiler.flags =
@@ -91,7 +76,7 @@ subsection \<open>The HOL4 Quote Filter\<close>
 declare [[ML_environment = "HOL4_bootstrap"]]\<comment> \<open>won't compile in Isabelle/ML\<close>
 ML_file "../HOL/tools/Holmake/QuoteFilter.sml"
 ML_file "../HOL/tools/Holmake/QFRead.sig"
-ML_file_old "../HOL/tools/Holmake/QFRead.sml"
+ML_file "../HOL/tools/Holmake/QFRead.sml"
 declare [[ML_environment = "HOL4_bootstrap>Isabelle"]]
 ML \<open>structure QFRead = QFRead\<close>
 ML \<open>structure QuoteFilter = QuoteFilter\<close>

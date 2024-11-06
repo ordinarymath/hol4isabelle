@@ -391,7 +391,7 @@ val _ = transfer_thms :=
 \<close>
 
 
-ML_old \<open>
+ML \<open>
 structure Bool2 = struct
 (* bool Script part 2 continue building up kernel primitives using Isabelle/HOL axioms*)
 local
@@ -1099,7 +1099,7 @@ end
 subsection \<open>now the rest of bool theory\<close>
 ML \<open>structure HolKernel = struct open HolKernel open Thm end\<close>\<comment> \<open>add the additional Thm stuff on bool\<close>
 
-ML_old \<open>
+ML \<open>
 local
 open Bool1 Bool2
 (*bool script part 3*)
