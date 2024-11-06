@@ -429,7 +429,7 @@ lemma h4_allDistinct_transfer[transfer_rule]:
   "(rh4_list A ===> (=)) distinct HOL4\<open>ALL_DISTINCT : 'b list -> bool\<close>"
   for A::"'a \<Rightarrow> 'b \<Rightarrow> bool"
   unfolding distinct_rec_list allDistinct_rec_hol4_list
-  sorry
+  oops
 end
 
 lemmas append_11 = [[hol4_thm \<open>listTheory.APPEND_11\<close>, untransferred]]

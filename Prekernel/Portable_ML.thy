@@ -120,8 +120,47 @@ val portableML_Holmakefile_special =
   ["Symreltab", "Int_Graph", "Inttab", "Symtab", "FlagDB", "holmake_holpathdb"]
 val () = List.app Load.mark_loaded portableML_Holmakefile_special
 \<close>
+(*
+ML_file "../HOL/src/portableML/quotation_dtype.sml"
 
-ML_file "../HOL/src/portableML/HOLsexp.grm-sig.sml"
+
+ML_file "../HOL/src/portableML/Arbnum.sig"
+ML_file "../HOL/src/portableML/Arbnum.sml"
+ML_file "../HOL/src/portableML/UTF8.sig"
+ML_file "../HOL/src/portableML/UTF8.sml"
+
+ML_file "../HOL/src/portableML/OldPP.sig"
+ML_file "../HOL/src/portableML/OldPP.sml"
+ML_file "../HOL/src/portableML/HOLquotation.sig"
+ML_file "../HOL/src/portableML/HOLquotation.sml"
+
+ML_file "../HOL/src/portableML/Portable.sig"
+ML_file "../HOL/src/portableML/Portable.sml"
+
+ML_file "../HOL/src/portableML/HOLsexp_dtype.sml"
+
+ML_file "../HOL/src/portableML/HOLsexp_parser.sig"
+ML_file "../HOL/src/portableML/HOLsexp_parser.sml"
+ML_file "../HOL/src/portableML/HOLsexp.sig"
+ML_file "../HOL/src/portableML/HOLsexp.sml"*)
+ML_file "../HOL/src/portableML/quotation_dtype.sml"
+
+ML_file "../HOL/src/portableML/HOLPP.sig"
+ML_file "../HOL/src/portableML/HOLPP.sml"
+ML_file "../HOL/src/portableML/Arbnum.sig"
+ML_file "../HOL/src/portableML/Arbnum.sml"
+ML_file "../HOL/src/portableML/UTF8.sig"
+ML_file "../HOL/src/portableML/UTF8.sml"
+
+ML_file "../HOL/src/portableML/OldPP.sig"
+ML_file "../HOL/src/portableML/OldPP.sml"
+ML_file "../HOL/src/portableML/HOLquotation.sig"
+ML_file "../HOL/src/portableML/HOLquotation.sml"
+
+ML_file "../HOL/src/portableML/Portable.sig"
+ML_file "../HOL/src/portableML/Portable.sml"
+
+ML_file "../HOL/src/portableML/Table.sml"
 ML \<open>Holmake build_heap (make_modules ["Graph","HOLsexp.grm","HOLsexp.lex"]) "../HOL/src/portableML/"\<close>
 
 ML \<open>Holmake build_heap make_all "../HOL/src/portableML/"\<close>

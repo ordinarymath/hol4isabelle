@@ -1,5 +1,6 @@
 theory Holmake_Emulation
   imports Tools
+  keywords "Holmake"
 begin
 
 context notes [[ML_environment="Isabelle>HOL4"]] begin

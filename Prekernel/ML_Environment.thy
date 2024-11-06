@@ -6,8 +6,9 @@ begin
 
 declare[[ML_catch_all=true]]
 
-
-
+(*this is a bunch of tests can ignore 
+TODO move
+*)
 subsection \<open>Prelude: Some examples that illustrate how sources and markup work\<close>
 
 ML \<open>val flags: ML_Compiler.flags =
@@ -20,7 +21,7 @@ ML \<open>ML_Context.eval flags (Input.pos_of src) toks (* semantic *)\<close>
 
 
 subsection \<open>Separate Bootstrap environment\<close>
-
+text\<open>This should be similar to HOL.state0\<close>
 setup \<open>ML_Env.setup "HOL4_bootstrap" ML_Env.SML_operations\<close>
 
 subsection \<open>Systeml\<close>
@@ -39,223 +40,16 @@ fun exec (comm,args) = error "dummy implementation of PolyML.Process.exec"
 end
 end
 \<close>
-context notes [[ML_environment="Isabelle>HOL4_bootstrap"]] begin
+declare [[ML_environment="Isabelle>HOL4_bootstrap"]] 
 ML \<open>val error = error\<close>
-end
-context notes [[ML_environment="HOL4_bootstrap"]] begin
-ML \<open>structure OS : OS = struct
-  open OS
-  structure Process : OS_PROCESS = struct
-    type status = OS.Process.status
-    val failure =  OS.Process.failure
-    val success =  OS.Process.success
-    fun dummy s = error ("dummy implementation of OS.Process." ^ s)
-    fun atExit _ = dummy "atExit"
-    fun exit _ = dummy "exit"
-    val getEnv = OS.Process.getEnv
-    fun isSuccess _ = dummy "isSuccess"
-    val sleep = OS.Process.sleep
-    val system = OS.Process.system (*dummy "system"*)
-    fun terminate _ = dummy "terminate"
-  end
-  structure FileSys : OS_FILE_SYS = struct
-    open FileSys
-    (*minisat needs file system access*)
-    (*fun access _ = false*)
-  end
-end\<close>
-end
 
 
-declare [[ML_environment = "HOL4_bootstrap"]]
-ML_file \<open>../HOL/sigobj/Systeml.sig\<close>
-ML_file \<open>../HOL/sigobj/Systeml.sml\<close>
-
-subsection \<open>The HOL4 Quote Filter\<close>
-
-declare [[ML_environment = "HOL4_bootstrap"]]\<comment> \<open>won't compile in Isabelle/ML\<close>
-ML_file "../HOL/tools/Holmake/QuoteFilter.sml"
-ML_file "../HOL/tools/Holmake/QFRead.sig"
-ML_file "../HOL/tools/Holmake/QFRead.sml"
-declare [[ML_environment = "HOL4_bootstrap>Isabelle"]]
-ML \<open>structure QFRead = QFRead\<close>
-ML \<open>structure QuoteFilter = QuoteFilter\<close>
-
-
-subsection \<open>Retrofitting Positions\<close>
-
-declare [[ML_environment = "Isabelle"]]
-ML_file \<open>quotefilter_source.ML\<close>
-
-subsection \<open>Examples\<close>
-ML \<open>
-QuoteFilter_Source.exhaust_string {inscriptp=true, quotefixp=false} "val x = ``a + b``" =
-[(1, "val"),
-  (4, " "),
-  (5, "x"),
-  (6, " "),
-  (7, "="),
-  (8, " "),
-  (9, "(Parse.Term [QUOTE \" (*#loc 1 12*)"),
-  (11, "a + b"),
-  (16, "\"])")]\<close>
-
-
-subsection \<open>``References'' managed in the context\<close>
-
-text \<open>Augmented with some additional information (a string) that should help identify memory leaks.\<close>
-declare [[ML_environment = "Isabelle"]]
-ML_file "context_var.ML"
-
-
-subsection \<open>HOL4 Environment\<close>
-
-ML \<open>
-val HOL4_script = Attrib.setup_config_bool \<^binding>\<open>HOL4_script\<close> (K false)
-val HOL4_operations: ML_Env.operations =
- {read_source = (fn source =>
-      let
-        val isscript = Config.get (Context.the_local_context()) HOL4_script
-      in
-        QuoteFilter_Source.read_source  {inscriptp=isscript, quotefixp=false} source
-      end),
-  explode_token = #explode_token ML_Env.SML_operations,
-  ML_system = true};
-\<close>
-
-setup \<open>ML_Env.setup "HOL4" HOL4_operations\<close>
-
-context notes [[ML_environment="HOL4_bootstrap>HOL4"]] begin
-ML \<open>
-structure Systeml = Systeml
-structure OS = OS
-structure Path = OS.Path
-structure FileSys = OS.FileSys
-structure Process = OS.Process
-exception SysErr = OS.SysErr
-structure QuoteFilter = QuoteFilter
-signature QFRead = QFRead\<close>
-end
-context notes [[ML_environment="Isabelle>HOL4"]] begin
-ML \<open>structure QFRead = QFRead\<close>
-ML \<open>val writeln = writeln\<close>
-ML \<open>structure File = File\<close>
-ML \<open>structure Path_Isabelle = Path\<close>
-ML \<open>structure Context_Position = Context_Position\<close>
-ML \<open>structure Context = Context\<close>
-ML \<open>structure QuoteFilter_Source = QuoteFilter_Source\<close>
-ML \<open>structure Unsynchronized = Unsynchronized\<close>
-ML \<open>structure Synchronized = Synchronized\<close>
-ML \<open>structure Context_Var = Context_Var\<close>
-ML \<open>exception Interrupt = SML90.Interrupt\<close>
-ML \<open>exception Io = SML90.Io\<close>
-ML \<open>structure Exn = Exn\<close>
-ML \<open>structure ML_Profiling = ML_Profiling\<close>
-ML \<open>
-structure ML_Lex = ML_Lex
-structure Position = Position
-structure ML_Compiler = ML_Compiler
-\<close>
-end
-
-
-subsection \<open>Local Program Variables\<close>
-
-declare [[ML_environment = "HOL4"]]
-text \<open>with original, physical refs\<close>
-ML_file "../HOL/src/portableML/Uref.sig"
-ML_file "../HOL/src/portableML/Uref.sml"
-
-
-subsection \<open>Re-bind References\<close>
-
-declare [[ML_environment = "Isabelle"]]
-
-text \<open>Here we bind \<^emph>\<open>all\<close> references to be managed in the context.
-When tools (look at simp with its BOUNDED/UNBOUNDED) create many refs on the spot, this is a
-bad idea. This should be denoted explicitly in the HOL4-sources with \<open>Uref.new\<close>.
-Also make sure that \<open>Uref.sig\<close> and \<open>Uref.sml\<close> are loaded \<^emph>\<open>before\<close> refs are re-bound.
-\<close>
-
-declare [[ML_environment = "HOL4"]]
-ML \<open>open Context_Var.Ref_Bindings\<close>
-ML \<open>Context_Var.bind_ref "ML_Environment"\<close>
-
-
-subsection \<open>Augment PolyML and non-SML structures\<close>
-
-declare [[ML_environment = "Isabelle"]]
-ML \<open>
-structure PrettyImpl = struct
-
-datatype pretty =
-         PrettyBlock of FixedInt.int * bool * PolyML.context list * pretty list
-       | PrettyBreak of FixedInt.int * FixedInt.int
-       | PrettyLineBreak
-       | PrettyString of string
-       | PrettyStringWithWidth of string * FixedInt.int
-
-fun ML_Pretty_of_pretty (PrettyBlock (i, b, cs, ps)) = PolyML.PrettyBlock (i, b, cs, map ML_Pretty_of_pretty ps)
-  | ML_Pretty_of_pretty (PrettyBreak (i, j)) = PolyML.PrettyBreak (i,j)
-  | ML_Pretty_of_pretty (PrettyString s) = PolyML.PrettyString s
-  | ML_Pretty_of_pretty PrettyLineBreak = Pretty.fbrk |> Pretty.to_polyml
-  | ML_Pretty_of_pretty (PrettyStringWithWidth (s, len)) =
-    PolyML.PrettyBlock (0, false, [PolyML.ContextProperty ("length", FixedInt.toString len)], [PolyML.PrettyString s])
-      (* TODO: the last two are not translated directly:
-          look at convert in ML_Pretty.from_polyml and around there
-      *)
-
-fun pretty_of_ML_Pretty (PolyML.PrettyBlock (i, b, cs, ps)) = PrettyBlock (i, b, cs, map pretty_of_ML_Pretty ps)
-  | pretty_of_ML_Pretty (PolyML.PrettyBreak (i, j)) = PrettyBreak (i, j)
-  | pretty_of_ML_Pretty PolyML.PrettyLineBreak = PrettyLineBreak
-  | pretty_of_ML_Pretty (PolyML.PrettyString s) = PrettyString s
-  | pretty_of_ML_Pretty (PolyML.PrettyStringWithWidth (s, i)) = PrettyStringWithWidth (s, i)
-
-fun prettyPrint (p, i) pp =
-  p (let val s = ML_Pretty.format_polyml i (ML_Pretty_of_pretty pp)
-    in String.substring (s, 0, String.size s - 1) end)
-end
-\<close>
-
-declare [[ML_environment = "Isabelle>HOL4"]]
-ML \<open>
-structure PolyML =
-struct
-open PolyML
-fun print_depth i = ML_Print_Depth.set_print_depth i
-val objSize = ML_Heap.obj_size
-fun addPrettyPrinter _ = warning "ML_Environment.PolyML.addPrettyPrinter: IGNORED!!!"
-structure Exception = Exn
-datatype pretty= datatype PrettyImpl.pretty
-structure Compiler = struct
-val compilerVersionNumber = 572
-val lineLength = Context_Var.var "PolyML.Compiler.lineLength" 80
-val prompt1 = Context_Var.var "PolyML.Compiler.prompt1" ""
-val prompt2 = Context_Var.var "PolyML.Compiler.prompt2" ""
-end
-end
-
-structure PrettyImpl = PrettyImpl
-
-structure Posix = struct
-structure Process = struct
-fun exec (comm,args) = error "dummy implementation of PolyML.Process.exec"
-end
-end
-
-structure Unix = struct
-fun execute _ = error "dummy implementation of Unix.execute"
-fun textInstreamOf () = error "dummy implementation of Unix.textInstreamOf"
-fun reap _ = error "dummy implementation of Unix.reap"
-end
-\<close>
-
+text\<open>Kinda need this earlier\<close>
 subsection \<open>Support to recompile files and throw away (most) results of compilation,
   faking file system access\<close>
 declare [[ML_environment="Isabelle"]]
 
 ML \<open>
-(* Maintaining file contents in theory context *)
 structure File_Store :
 sig
   val store : string -> (theory -> Token.file) -> theory -> theory
@@ -320,6 +114,7 @@ fun add_dir dir = Context.>>> (Context.map_theory_result (add_dir_setup dir Posi
 
 end
 \<close>
+(*TODO This can probably be replaced by ML_File.command *)
 
 ML \<open>
 (* TODO: This is a modified version of Isabelle/Pure/ML/ml_file.ML *)
@@ -361,9 +156,9 @@ subsection \<open>TextIO in Context\<close>
 
 text \<open>No ``Streaming'', rather read whole file at once into memory\<close>
 
-declare [[ML_environment="HOL4>Isabelle"]]
+declare [[ML_environment="HOL4_bootstrap>Isabelle"]]
 ML \<open>structure Path_HOL4 = OS.Path\<close>
-declare [[ML_environment="Isabelle>HOL4"]]
+declare [[ML_environment="Isabelle>HOL4_bootstrap"]]
 ML \<open>
 structure TextIO_Context = struct
 
@@ -596,12 +391,256 @@ structure TextIO_Context = struct
 end
 \<close>
 
-declare [[ML_environment = "HOL4"]]
+declare [[ML_environment = "HOL4_bootstrap"]]
 
 ML \<open>structure TextIO_PolyML = TextIO\<close>
 ML \<open>structure TextIO_Context = TextIO_Context\<close>
 text \<open>Always write to context:\<close>
 ML \<open>structure TextIO = TextIO_Context\<close>
+
+context notes [[ML_environment="HOL4_bootstrap"]] begin
+ML \<open>structure OS : OS = struct
+  open OS
+  structure Process : OS_PROCESS = struct
+    type status = OS.Process.status
+    val failure =  OS.Process.failure
+    val success =  OS.Process.success
+    fun dummy s = error ("dummy implementation of OS.Process." ^ s)
+    fun atExit _ = dummy "atExit"
+    fun exit _ = dummy "exit"
+    val getEnv = OS.Process.getEnv
+    fun isSuccess _ = dummy "isSuccess"
+    val sleep = OS.Process.sleep
+    val system = OS.Process.system (*dummy "system"*)
+    fun terminate _ = dummy "terminate"
+  end
+  structure FileSys : OS_FILE_SYS = struct
+    open FileSys
+    (*minisat needs file system access*)
+    (*fun access _ = false*)
+  end
+end\<close>
+end
+
+
+declare [[ML_environment = "HOL4_bootstrap"]]
+
+text\<open>Based on @{file "../HOL/tools-poly/poly/poly-init.ML"}\<close>
+subsection \<open>poly-init.ML\<close>
+
+ML_file \<open>../HOL/tools-poly/poly/Mosml.sml\<close>
+ML_file \<open>../HOL/tools-poly/poly/Binarymap.sig\<close>
+ML_file \<open>../HOL/tools-poly/poly/Binarymap.sml\<close>
+ML_file \<open>../HOL/tools-poly/poly/Binaryset.sig\<close>
+ML_file \<open>../HOL/tools-poly/poly/Binaryset.sml\<close>
+ML_file \<open>../HOL/tools-poly/poly/Listsort.sig\<close>
+ML_file \<open>../HOL/tools-poly/poly/Listsort.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/holpathdb.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/holpathdb.sml\<close>
+(*ML_file \<open>../HOL/tools-poly/Holmake/CompilerSpecific.ML\<close> this kinda we need to patch*)
+ML_file \<open>../HOL/tools/Holmake/Systeml.sig\<close>
+ML_file \<open>../HOL/tools-poly/Holmake/Systeml.sml\<close>
+
+text\<open>Based on @{file "../HOL/tools-poly/poly/poly-init2.ML"}\<close>
+subsection \<open>poly-init2.ML\<close>
+ML_file \<open>../HOL/tools/Holmake/AttributeSyntax.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/AttributeSyntax.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/QuoteFilter.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/HM_SimpleBuffer.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/HM_SimpleBuffer.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/HOLFS_dtype.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/HFS_NameMunge.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/poly/HFS_NameMunge.sml\<close>
+(*
+ML_file \<open>../HOL/tools/Holmake/HOLFS_dtype.sml\<close>*) (*TODO ask why is it used twice*)
+ML_file \<open>../HOL/tools/Holmake/HOLFileSys.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/HOLFileSys.sml\<close>
+ML_file \<open>../HOL/tools/Holmake/QFRead.sig\<close>
+ML_file \<open>../HOL/tools/Holmake/QFRead.sml\<close>
+(* don't think need this it does ML_file kinda functionality
+ML_file \<open>../HOL/tools-poly/poly/quse.sig\<close>
+ML_file \<open>../HOL/tools-poly/poly/quse.sml\<close>*)
+
+subsection \<open>The HOL4 Quote Filter\<close>
+
+declare [[ML_environment = "HOL4_bootstrap>Isabelle"]]
+ML \<open>structure QFRead = QFRead\<close>
+ML \<open>structure QuoteFilter = QuoteFilter\<close>
+
+
+subsection \<open>Retrofitting Positions\<close>
+
+declare [[ML_environment = "Isabelle"]]
+ML_file \<open>quotefilter_source.ML\<close>
+
+subsection \<open>Examples\<close>
+ML \<open>
+QuoteFilter_Source.exhaust_string {inscriptp=true, quotefixp=false} "val x = ``a + b``" =
+[(1, "val"),
+  (4, " "),
+  (5, "x"),
+  (6, " "),
+  (7, "="),
+  (8, " "),
+  (9, "(Parse.Term [QUOTE \" (*#loc 1 12*)"),
+  (11, "a + b"),
+  (16, "\"])")]\<close>
+
+
+subsection \<open>``References'' managed in the context\<close>
+
+text \<open>Augmented with some additional information (a string) that should help identify memory leaks.\<close>
+declare [[ML_environment = "Isabelle"]]
+ML_file "context_var.ML"
+
+
+subsection \<open>HOL4 Environment\<close>
+
+ML \<open>
+val HOL4_script = Attrib.setup_config_bool \<^binding>\<open>HOL4_script\<close> (K false)
+val HOL4_operations: ML_Env.operations =
+ {read_source = (fn source =>
+      let
+        val isscript = Config.get (Context.the_local_context()) HOL4_script
+      in
+        QuoteFilter_Source.read_source  {inscriptp=isscript, quotefixp=false} source
+      end),
+  explode_token = #explode_token ML_Env.SML_operations,
+  ML_system = true};
+\<close>
+
+setup \<open>ML_Env.setup "HOL4" HOL4_operations\<close>
+
+context notes [[ML_environment="HOL4_bootstrap>HOL4"]] begin
+ML \<open>
+structure Systeml = Systeml
+structure OS = OS
+structure Path = OS.Path
+structure FileSys = OS.FileSys
+structure Process = OS.Process
+exception SysErr = OS.SysErr
+structure TextIO = TextIO
+structure HOLFS_dtype = HOLFS_dtype
+structure HFS_NameMunge = HFS_NameMunge
+structure HOLFileSys = HOLFileSys
+structure QuoteFilter = QuoteFilter
+signature QFRead = QFRead
+\<close>
+end
+context notes [[ML_environment="Isabelle>HOL4"]] begin
+ML \<open>structure QFRead = QFRead\<close>
+ML \<open>val writeln = writeln\<close>
+ML \<open>structure File = File\<close>
+ML \<open>structure Path_Isabelle = Path\<close>
+ML \<open>structure Context_Position = Context_Position\<close>
+ML \<open>structure Context = Context\<close>
+ML \<open>structure QuoteFilter_Source = QuoteFilter_Source\<close>
+ML \<open>structure Unsynchronized = Unsynchronized\<close>
+ML \<open>structure Synchronized = Synchronized\<close>
+ML \<open>structure Context_Var = Context_Var\<close>
+ML \<open>exception Interrupt = SML90.Interrupt\<close>
+ML \<open>exception Io = SML90.Io\<close>
+ML \<open>structure Exn = Exn\<close>
+ML \<open>structure ML_Profiling = ML_Profiling\<close>
+ML \<open>
+structure ML_Lex = ML_Lex
+structure Position = Position
+structure ML_Compiler = ML_Compiler
+\<close>
+end
+
+
+subsection \<open>Local Program Variables\<close>
+
+declare [[ML_environment = "HOL4"]]
+text \<open>with original, physical refs\<close>
+ML_file "../HOL/src/portableML/Uref.sig"
+ML_file "../HOL/src/portableML/Uref.sml"
+
+
+subsection \<open>Re-bind References\<close>
+
+declare [[ML_environment = "Isabelle"]]
+
+text \<open>Here we bind \<^emph>\<open>all\<close> references to be managed in the context.
+When tools (look at simp with its BOUNDED/UNBOUNDED) create many refs on the spot, this is a
+bad idea. This should be denoted explicitly in the HOL4-sources with \<open>Uref.new\<close>.
+Also make sure that \<open>Uref.sig\<close> and \<open>Uref.sml\<close> are loaded \<^emph>\<open>before\<close> refs are re-bound.
+\<close>
+
+declare [[ML_environment = "HOL4"]]
+ML \<open>open Context_Var.Ref_Bindings\<close>
+ML \<open>Context_Var.bind_ref "ML_Environment"\<close>
+
+
+subsection \<open>Augment PolyML and non-SML structures\<close>
+
+declare [[ML_environment = "Isabelle"]]
+ML \<open>
+structure PrettyImpl = struct
+
+datatype pretty =
+         PrettyBlock of FixedInt.int * bool * PolyML.context list * pretty list
+       | PrettyBreak of FixedInt.int * FixedInt.int
+       | PrettyLineBreak
+       | PrettyString of string
+       | PrettyStringWithWidth of string * FixedInt.int
+
+fun ML_Pretty_of_pretty (PrettyBlock (i, b, cs, ps)) = PolyML.PrettyBlock (i, b, cs, map ML_Pretty_of_pretty ps)
+  | ML_Pretty_of_pretty (PrettyBreak (i, j)) = PolyML.PrettyBreak (i,j)
+  | ML_Pretty_of_pretty (PrettyString s) = PolyML.PrettyString s
+  | ML_Pretty_of_pretty PrettyLineBreak = Pretty.fbrk |> Pretty.to_polyml
+  | ML_Pretty_of_pretty (PrettyStringWithWidth (s, len)) =
+    PolyML.PrettyBlock (0, false, [PolyML.ContextProperty ("length", FixedInt.toString len)], [PolyML.PrettyString s])
+      (* TODO: the last two are not translated directly:
+          look at convert in ML_Pretty.from_polyml and around there
+      *)
+
+fun pretty_of_ML_Pretty (PolyML.PrettyBlock (i, b, cs, ps)) = PrettyBlock (i, b, cs, map pretty_of_ML_Pretty ps)
+  | pretty_of_ML_Pretty (PolyML.PrettyBreak (i, j)) = PrettyBreak (i, j)
+  | pretty_of_ML_Pretty PolyML.PrettyLineBreak = PrettyLineBreak
+  | pretty_of_ML_Pretty (PolyML.PrettyString s) = PrettyString s
+  | pretty_of_ML_Pretty (PolyML.PrettyStringWithWidth (s, i)) = PrettyStringWithWidth (s, i)
+
+fun prettyPrint (p, i) pp =
+  p (let val s = ML_Pretty.format_polyml i (ML_Pretty_of_pretty pp)
+    in String.substring (s, 0, String.size s - 1) end)
+end
+\<close>
+
+declare [[ML_environment = "Isabelle>HOL4"]]
+ML \<open>
+structure PolyML =
+struct
+open PolyML
+fun print_depth i = ML_Print_Depth.set_print_depth i
+val objSize = ML_Heap.obj_size
+fun addPrettyPrinter _ = warning "ML_Environment.PolyML.addPrettyPrinter: IGNORED!!!"
+structure Exception = Exn
+datatype pretty= datatype PrettyImpl.pretty
+structure Compiler = struct
+val compilerVersionNumber = 572
+val lineLength = Context_Var.var "PolyML.Compiler.lineLength" 80
+val prompt1 = Context_Var.var "PolyML.Compiler.prompt1" ""
+val prompt2 = Context_Var.var "PolyML.Compiler.prompt2" ""
+end
+end
+
+structure PrettyImpl = PrettyImpl
+
+structure Posix = struct
+structure Process = struct
+fun exec (comm,args) = error "dummy implementation of PolyML.Process.exec"
+end
+end
+
+structure Unix = struct
+fun execute _ = error "dummy implementation of Unix.execute"
+fun textInstreamOf () = error "dummy implementation of Unix.textInstreamOf"
+fun reap _ = error "dummy implementation of Unix.reap"
+end
+\<close>
+
 
 
 subsection \<open>Only for the Isabelle Kernel?!\<close>
