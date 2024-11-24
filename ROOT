@@ -1,9 +1,9 @@
 (* Prekernel *)
 
-session Prekernel in Prekernel = Pure +
+
+session Prekernel in Prekernel = HOL +
   theories
     Prekernel
-
 
 (* Original HOL4 Kernel *)
 

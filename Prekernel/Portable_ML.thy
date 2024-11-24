@@ -3,9 +3,14 @@ imports Holmake_Emulation
 begin
 
 declare [[ML_environment = "HOL4"]]
+ML \<open>open Context_Var.Ref_Bindings\<close>
 ML \<open>Context_Var.bind_ref "HOL4_Portable_ML"\<close>
 
-context notes [[ML_environment="Isabelle>HOL4"]] begin ML \<open>structure Seq = Seq\<close> end
+context notes [[ML_environment="Isabelle>HOL4"]]
+begin
+ML \<open>structure Seq = Seq
+\<close>
+end
 ML_file "../HOL/src/portableML/seq.sig"
 ML_file "../HOL/src/portableML/seq.sml"
 ML \<open>
@@ -40,6 +45,40 @@ declare [[ML_environment = "HOL4"]]
 ML \<open>Load.mark_loaded "seq"\<close>
 ML \<open>Load.mark_loaded "Uref"\<close>
 
+
+
+ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_base-sig.sml"
+ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_join.sml"
+ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_lrtable.sml"
+ML_file "../HOL/tools/mlyacc/mlyacclib/MLY_stream.sml"
+ML\<open> List.app Load.mark_loaded ["MLY_stream"]\<close>
+(*
+(* Version of MLY_stream with unsychronized refs *)
+ML\<open>
+structure Stream :> STREAM =
+struct
+   open Uref
+   datatype 'a str = EVAL of 'a * 'a str Uref.t | UNEVAL of (unit->'a)
+
+   type 'a stream = 'a str Uref.t
+
+   fun get s = (case !s of
+       EVAL t => t
+     | UNEVAL f =>
+	    let val t = (f(), Uref.new(UNEVAL f)) in s := EVAL t; t end)
+
+   fun streamify f = Uref.new(UNEVAL f)
+   fun cons(a,s) = Uref.new(EVAL(a,s))
+
+end;
+\<close>*)
+ML\<open>val makestring = Int.toString\<close>
+
+
+
+ML \<open>Holmake build_heap make_all "../HOL/tools/mlyacc/mlyacclib"\<close>
+
+
 ML \<open>Context_Var.bind_ref "HOL4_Portable_ML_Susp"\<close>
 ML_file "../HOL/src/portableML/poly/Susp.sig"
 ML_file "../HOL/src/portableML/poly/Susp.sml"\<comment> \<open>dependency not picked up by holdeptool -
@@ -50,7 +89,6 @@ List.app Load.mark_loaded
 ["Exn",
 "Thread_Attributes",
 "Synchronized",
-"Unsynchronized",
 "Standard_Thread",
 "Multithreading",
 "Single_Assignment",
@@ -114,56 +152,27 @@ List.app Load.mark_loaded
 "ListPair"]\<close>
 ML \<open>Holmake build_heap make_all "../HOL/src/portableML/poly"\<close>
 
+
 ML \<open>
 (* apparently they cause trouble with dependencies *)
 val portableML_Holmakefile_special =
   ["Symreltab", "Int_Graph", "Inttab", "Symtab", "FlagDB", "holmake_holpathdb"]
 val () = List.app Load.mark_loaded portableML_Holmakefile_special
 \<close>
-(*
-ML_file "../HOL/src/portableML/quotation_dtype.sml"
-
-
-ML_file "../HOL/src/portableML/Arbnum.sig"
-ML_file "../HOL/src/portableML/Arbnum.sml"
-ML_file "../HOL/src/portableML/UTF8.sig"
-ML_file "../HOL/src/portableML/UTF8.sml"
-
-ML_file "../HOL/src/portableML/OldPP.sig"
-ML_file "../HOL/src/portableML/OldPP.sml"
-ML_file "../HOL/src/portableML/HOLquotation.sig"
-ML_file "../HOL/src/portableML/HOLquotation.sml"
-
-ML_file "../HOL/src/portableML/Portable.sig"
-ML_file "../HOL/src/portableML/Portable.sml"
-
+ML_file \<open>../HOL/src/portableML/HOLsexp.grm-sig.sml\<close>
+ML_file \<open>../HOL/src/portableML/HOLsexp.lex.sml\<close>
 ML_file "../HOL/src/portableML/HOLsexp_dtype.sml"
 
-ML_file "../HOL/src/portableML/HOLsexp_parser.sig"
-ML_file "../HOL/src/portableML/HOLsexp_parser.sml"
-ML_file "../HOL/src/portableML/HOLsexp.sig"
-ML_file "../HOL/src/portableML/HOLsexp.sml"*)
+ML \<open>Holmake build_heap (make_modules ["Graph","HOLsexp.grm","HOLsexp.lex"]) "../HOL/src/portableML/"\<close>
 ML_file "../HOL/src/portableML/quotation_dtype.sml"
 
-ML_file "../HOL/src/portableML/HOLPP.sig"
-ML_file "../HOL/src/portableML/HOLPP.sml"
-ML_file "../HOL/src/portableML/Arbnum.sig"
-ML_file "../HOL/src/portableML/Arbnum.sml"
-ML_file "../HOL/src/portableML/UTF8.sig"
-ML_file "../HOL/src/portableML/UTF8.sml"
 
-ML_file "../HOL/src/portableML/OldPP.sig"
-ML_file "../HOL/src/portableML/OldPP.sml"
-ML_file "../HOL/src/portableML/HOLquotation.sig"
-ML_file "../HOL/src/portableML/HOLquotation.sml"
 
-ML_file "../HOL/src/portableML/Portable.sig"
-ML_file "../HOL/src/portableML/Portable.sml"
 
-ML_file "../HOL/src/portableML/Table.sml"
-ML \<open>Holmake build_heap (make_modules ["Graph","HOLsexp.grm","HOLsexp.lex"]) "../HOL/src/portableML/"\<close>
+ML \<open>List.app Load.mark_loaded ["quotation_dtype", "HOLFileSys"]\<close>
 
 ML \<open>Holmake build_heap make_all "../HOL/src/portableML/"\<close>
+
 ML \<open>val () = List.app Load.unmark_loaded portableML_Holmakefile_special\<close>
 ML \<open>Holmake build_heap (make_all_except ["holmake_holpathdb"]) "../HOL/src/portableML/"\<close>
 

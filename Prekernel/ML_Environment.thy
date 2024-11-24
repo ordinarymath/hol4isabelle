@@ -154,6 +154,9 @@ end;
 
 subsection \<open>TextIO in Context\<close>
 
+text\<open>This is meant to simulate textIO which HOL4 uses to read files.
+output is intentionally not implemented as then we will have weird state stored somewhere
+all state should be in a poly heap\<close>
 text \<open>No ``Streaming'', rather read whole file at once into memory\<close>
 
 declare [[ML_environment="HOL4_bootstrap>Isabelle"]]
@@ -219,14 +222,6 @@ structure TextIO_Context = struct
       val (rest, lines') = work (split_lines s) lines
     in (rest, map (fn x => x^"\n") lines', prefix) end
 
-  fun output ("...  stdOut  ...", s) = TextIO.output(TextIO.stdOut, s)
-    | output ("...  stdErr  ...", s) = TextIO.output(TextIO.stdErr, s)
-    | output (stream, s) = Context.>>(Outstreams.map (fn streams =>
-      case Symtab.lookup streams stream of
-        NONE => error ("TextIO_Context.output: " ^ stream)
-      | SOME (NONE, lines, prefix) => Symtab.update (stream, extract_lines s lines prefix) streams
-      | SOME (SOME r, lines, prefix) => Symtab.update (stream, extract_lines (r^s) lines prefix) streams
-      ))
 
   fun openIn "...  stdIn  ..." = error ("TextIO_Context.openIn cannot read from stdIn...")
     | openIn path =
@@ -289,8 +284,6 @@ structure TextIO_Context = struct
         | SOME lines => (String.concat lines, Instreams.put (Symtab.update (stream, []) streams) context)
       end)
 
-  fun flushOut _ = ()
-
   fun openOut path =
     let
       val filename = Path_HOL4.file path
@@ -320,24 +313,6 @@ structure TextIO_Context = struct
         end)
     in filename end
 
-
-  fun closeOut stream = Context.>>(fn context =>
-    let
-      val outstreams = Outstreams.get context
-    in case Symtab.lookup outstreams stream of
-        NONE => error ("TextIO_Context.closeOut not open: " ^ stream)
-      | SOME (rest, lines', prefix) =>
-        let
-          val lines = prefix @ rev (case rest of NONE => lines' | SOME r => r^"\n"::lines')
-        in
-          (context
-            |> Context.map_theory (File_Store.store stream
-                (K {src_path=Path.explode stream, lines = lines,
-                  digest= SHA1.digest (String.concat lines), pos = Position.none}))
-            |> Outstreams.put (Symtab.delete stream outstreams))
-        end
-    end)
-
   fun openString s = Context.>>>(fn context =>
     let
       val stream = "string=" ^ (SHA1.digest s |> SHA1.rep)
@@ -362,7 +337,7 @@ structure TextIO_Context = struct
         | SOME [] => true
         | SOME (_::_) => false
     end
-  val print = TextIO.print
+  val print = writeln
 
   fun input1 s = Char.fromString (inputN(s, 1))
 
@@ -387,6 +362,45 @@ structure TextIO_Context = struct
               setInstream (strm, instrm');
               SOME v)
       end
+  (*see text above. Dont implement. dont silently drop also but output error*)
+  fun output _ = error "TextIO_Context.output"
+
+  fun output1 _ = error "TextIO_Context.output1"
+
+  fun closeOut _ = error "TextIO_Context.closeOut"
+
+  fun flushOut _ = error "TextIO_Context.flushOut"
+
+
+  fun closeOut stream = Context.>>(fn context =>
+    let
+      val outstreams = Outstreams.get context
+    in case Symtab.lookup outstreams stream of
+        NONE => error ("TextIO_Context.closeOut not open: " ^ stream)
+      | SOME (rest, lines', prefix) =>
+        let
+          val lines = prefix @ rev (case rest of NONE => lines' | SOME r => r^"\n"::lines')
+        in
+          (context
+            |> Context.map_theory (File_Store.store stream
+                (K {src_path=Path.explode stream, lines = lines,
+                  digest= SHA1.digest (String.concat lines), pos = Position.none}))
+            |> Outstreams.put (Symtab.delete stream outstreams))
+        end
+    end)
+
+
+  fun flushOut _ = ()
+
+
+  fun output ("...  stdOut  ...", s) = TextIO.output(TextIO.stdOut, s)
+    | output ("...  stdErr  ...", s) = TextIO.output(TextIO.stdErr, s)
+    | output (stream, s) = Context.>>(Outstreams.map (fn streams =>
+      case Symtab.lookup streams stream of
+        NONE => error ("TextIO_Context.output: " ^ stream)
+      | SOME (NONE, lines, prefix) => Symtab.update (stream, extract_lines s lines prefix) streams
+      | SOME (SOME r, lines, prefix) => Symtab.update (stream, extract_lines (r^s) lines prefix) streams
+      ))
 
 end
 \<close>
@@ -425,46 +439,14 @@ end
 
 declare [[ML_environment = "HOL4_bootstrap"]]
 
-text\<open>Based on @{file "../HOL/tools-poly/poly/poly-init.ML"}\<close>
-subsection \<open>poly-init.ML\<close>
-
-ML_file \<open>../HOL/tools-poly/poly/Mosml.sml\<close>
-ML_file \<open>../HOL/tools-poly/poly/Binarymap.sig\<close>
-ML_file \<open>../HOL/tools-poly/poly/Binarymap.sml\<close>
-ML_file \<open>../HOL/tools-poly/poly/Binaryset.sig\<close>
-ML_file \<open>../HOL/tools-poly/poly/Binaryset.sml\<close>
-ML_file \<open>../HOL/tools-poly/poly/Listsort.sig\<close>
-ML_file \<open>../HOL/tools-poly/poly/Listsort.sml\<close>
-ML_file \<open>../HOL/tools/Holmake/holpathdb.sig\<close>
-ML_file \<open>../HOL/tools/Holmake/holpathdb.sml\<close>
-(*ML_file \<open>../HOL/tools-poly/Holmake/CompilerSpecific.ML\<close> this kinda we need to patch*)
 ML_file \<open>../HOL/tools/Holmake/Systeml.sig\<close>
 ML_file \<open>../HOL/tools-poly/Holmake/Systeml.sml\<close>
-
-text\<open>Based on @{file "../HOL/tools-poly/poly/poly-init2.ML"}\<close>
-subsection \<open>poly-init2.ML\<close>
 ML_file \<open>../HOL/tools/Holmake/AttributeSyntax.sig\<close>
 ML_file \<open>../HOL/tools/Holmake/AttributeSyntax.sml\<close>
 ML_file \<open>../HOL/tools/Holmake/QuoteFilter.sml\<close>
-ML_file \<open>../HOL/tools/Holmake/HM_SimpleBuffer.sig\<close>
-ML_file \<open>../HOL/tools/Holmake/HM_SimpleBuffer.sml\<close>
-ML_file \<open>../HOL/tools/Holmake/HOLFS_dtype.sml\<close>
-ML_file \<open>../HOL/tools/Holmake/HFS_NameMunge.sig\<close>
-ML_file \<open>../HOL/tools/Holmake/poly/HFS_NameMunge.sml\<close>
-(*
-ML_file \<open>../HOL/tools/Holmake/HOLFS_dtype.sml\<close>*) (*TODO ask why is it used twice*)
-ML_file \<open>../HOL/tools/Holmake/HOLFileSys.sig\<close>
-ML_file \<open>../HOL/tools/Holmake/HOLFileSys.sml\<close>
-ML_file \<open>../HOL/tools/Holmake/QFRead.sig\<close>
-ML_file \<open>../HOL/tools/Holmake/QFRead.sml\<close>
-(* don't think need this it does ML_file kinda functionality
-ML_file \<open>../HOL/tools-poly/poly/quse.sig\<close>
-ML_file \<open>../HOL/tools-poly/poly/quse.sml\<close>*)
-
 subsection \<open>The HOL4 Quote Filter\<close>
 
 declare [[ML_environment = "HOL4_bootstrap>Isabelle"]]
-ML \<open>structure QFRead = QFRead\<close>
 ML \<open>structure QuoteFilter = QuoteFilter\<close>
 
 
@@ -520,15 +502,11 @@ structure FileSys = OS.FileSys
 structure Process = OS.Process
 exception SysErr = OS.SysErr
 structure TextIO = TextIO
-structure HOLFS_dtype = HOLFS_dtype
-structure HFS_NameMunge = HFS_NameMunge
-structure HOLFileSys = HOLFileSys
 structure QuoteFilter = QuoteFilter
-signature QFRead = QFRead
+val error = error
 \<close>
 end
 context notes [[ML_environment="Isabelle>HOL4"]] begin
-ML \<open>structure QFRead = QFRead\<close>
 ML \<open>val writeln = writeln\<close>
 ML \<open>structure File = File\<close>
 ML \<open>structure Path_Isabelle = Path\<close>
@@ -569,8 +547,7 @@ Also make sure that \<open>Uref.sig\<close> and \<open>Uref.sml\<close> are load
 \<close>
 
 declare [[ML_environment = "HOL4"]]
-ML \<open>open Context_Var.Ref_Bindings\<close>
-ML \<open>Context_Var.bind_ref "ML_Environment"\<close>
+
 
 
 subsection \<open>Augment PolyML and non-SML structures\<close>
